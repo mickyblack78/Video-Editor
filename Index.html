@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Motorcycle Direction Reverser</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --accent-color: #bb86fc;
+            --accent-hover: #3700b3;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            text-align: center;
+        }
+
+        p.description {
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+        }
+
+        input[type="file"], input[type="number"] {
+            background: #2d2d2d;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        input[type="number"] {
+            width: 100px;
+        }
+
+        .inputs-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: #121212;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #9965f4;
+        }
+
+        button:disabled {
+            background-color: #444444;
+            color: #777777;
+            cursor: not-allowed;
+        }
+
+        .preview-area {
+            margin-top: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        video, canvas {
+            max-width: 100%;
+            border-radius: 4px;
+            background: #000;
+            margin-top: 10px;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        #statusLog {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--accent-color);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Motorcycle Direction Fixer</h2>
+    <p class="description">Select your video file, point out the exact 3-second mistake interval, and flip the frames locally in your browser with complete data privacy.</p>
+
+    <div class="control-group">
+        <label for="videoUpload">1. Select Video File (MP4 / WebM)</label>
+        <input type="file" id="videoUpload" accept="video/*">
+    </div>
+
+    <div class="inputs-row">
+        <div class="control-group">
+            <label for="startTime">Segment Start (seconds)</label>
+            <input type="number" id="startTime" value="0.0" step="0.1" min="0">
+        </div>
+        <div class="control-group">
+            <label for="endTime">Segment End (seconds)</label>
+            <input type="number" id="endTime" value="3.0" step="0.1" min="0.1">
+        </div>
+    </div>
+
+    <button id="processBtn" disabled>Process and Reverse 3-Second Segment</button>
+
+    <div id="statusLog"></div>
+
+    <div class="preview-area">
+        <video id="videoElement" controls class="hidden"></video>
+        <canvas id="canvasElement"></canvas>
+        <div id="downloadContainer" class="hidden" style="width: 100%; text-align: center;">
+            <a id="downloadLink" download="corrected_motorcycle_video.webm">
+                <button style="background-color: #03dac6; color: #121212;">Download Fixed Video File</button>
+            </a>
+        </div>
+    </div>
+</div>
+
+<video id="hiddenVideo" class="hidden" muted playsinline></video>
+
+<script>
+    const videoUpload = document.getElementById('videoUpload');
+    const startTimeInput = document.getElementById('startTime');
+    const endTimeInput = document.getElementById('endTime');
+    const processBtn = document.getElementById('processBtn');
+    const videoElement = document.getElementById('videoElement');
+    const hiddenVideo = document.getElementById('hiddenVideo');
+    const canvasElement = document.getElementById('canvasElement');
+    const ctx = canvasElement.getContext('2d');
+    const statusLog = document.getElementById('statusLog');
+    const downloadContainer = document.getElementById('downloadContainer');
+    const downloadLink = document.getElementById('downloadLink');
+
+    let videoFileUrl = null;
+    let videoDuration = 0;
+
+    videoUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        videoFileUrl = URL.createObjectURL(file);
+        videoElement.src = videoFileUrl;
+        videoElement.classList.remove('hidden');
+        
+        hiddenVideo.src = videoFileUrl;
+        hiddenVideo.onloadedmetadata = () => {
+            videoDuration = hiddenVideo.duration;
+            processBtn.disabled = false;
+            statusLog.textContent = `Video loaded successfully. Duration: ${videoDuration.toFixed(2)}s`;
+        };
+    });
+
+    processBtn.addEventListener('click', async () => {
+        const start = parseFloat(startTimeInput.value);
+        const end = parseFloat(endTimeInput.value);
+
+        if (isNaN(start) || isNaN(end) || start >= end) {
+            alert("Please provide a valid start and end time where End is greater than Start.");
+            return;
+        }
+
+        processBtn.disabled = true;
+        statusLog.textContent = "Initializing frame extraction engine...";
+        downloadContainer.classList.add('hidden');
+
+        try {
+            await runFrameProcessing(start, end);
+        } catch (err) {
+            console.error(err);
+            statusLog.textContent = "Error processing video frames: " + err.message;
+            processBtn.disabled = false;
+        }
+    });
+
+    async function runFrameProcessing(start, end) {
+        hiddenVideo.currentTime = 0;
+        await waitForSeek(hiddenVideo);
+
+        const fps = 30; // standard recording framerate
+        const width = hiddenVideo.videoWidth || 640;
+        const height = hiddenVideo.videoHeight || 480;
+
+        canvasElement.width = width;
+        canvasElement.height = height;
+
+        const totalDuration = hiddenVideo.duration;
+        const totalFrames = Math.floor(totalDuration * fps);
+        const startFrame = Math.floor(start * fps);
+        const endFrame = Math.floor(end * fps);
+
+        statusLog.textContent = "Step 1/3: Extracting full video frame array...";
+
+        // Collect all video frames data
+        const frameDataStore = [];
+        
+        for (let f = 0; f < totalFrames; f++) {
+            const timeTarget = f / fps;
+            if (timeTarget > totalDuration) break;
+            
+            hiddenVideo.currentTime = timeTarget;
+            await waitForSeek(hiddenVideo);
+
+            ctx.drawImage(hiddenVideo, 0, 0, width, height);
+            
+            // If the frame sits inside our error zone, we store it for time-reversing
+            if (f >= startFrame && f <= endFrame) {
+                frameDataStore.push(ctx.getImageData(0, 0, width, height));
+            } else {
+                // For regular parts, we store frame capture to replay sequentially
+                frameDataStore.push(ctx.getImageData(0, 0, width, height));
+            }
+        }
+
+        statusLog.textContent = "Step 2/3: Reversing target motorcycle movement window...";
+
+        // Isolate the target segment slice and reverse it
+        // Regular sequence: [ 0 ... startFrame ... endFrame ... totalFrames ]
+        // Modified sequence: [ 0 ... reversed(startFrame->endFrame) ... totalFrames ]
+        const beforeSlice = frameDataStore.slice(0, startFrame);
+        const targetSlice = frameDataStore.slice(startFrame, endFrame + 1).reverse();
+        const afterSlice = frameDataStore.slice(endFrame + 1);
+
+        const assembledFrames = [...beforeSlice, ...targetSlice, ...afterSlice];
+
+        statusLog.textContent = "Step 3/3: Rebuilding media stream container...";
+
+        const canvasStream = canvasElement.captureStream(fps);
+        
+        let recordedChunks = [];
+        const options = { mimeType: 'video/webm; codecs=vp9' };
+        let mediaRecorder;
+
+        try {
+            mediaRecorder = new MediaRecorder(canvasStream, options);
+        } catch (e) {
+            mediaRecorder = new MediaRecorder(canvasStream); // fallback standard codec
+        }
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            downloadLink.href = url;
+            downloadContainer.classList.remove('hidden');
+            statusLog.textContent = "Processing complete! Your fixed video is ready for download.";
+            processBtn.disabled = false;
+        };
+
+        mediaRecorder.start();
+
+        // Render assembled frames sequentially back onto the canvas stream tracker
+        let currentDrawIndex = 0;
+        
+        const renderInterval = setInterval(() => {
+            if (currentDrawIndex < assembledFrames.length) {
+                ctx.putImageData(assembledFrames[currentDrawIndex], 0, 0);
+                currentDrawIndex++;
+            } else {
+                clearInterval(renderInterval);
+                mediaRecorder.stop();
+            }
+        }, 1000 / fps);
+    }
+
+    function waitForSeek(videoElem) {
+        return new Promise((resolve) => {
+            if (videoElem.seeking === false) {
+                resolve();
+                return;
+            }
+            const handler = () => {
+                videoElem.removeEventListener('seeked', handler);
+                resolve();
+            };
+            videoElem.addEventListener('seeked', handler);
+        });
+    }
+</script>
+
+</body>
+</html>
