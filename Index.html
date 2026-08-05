@@ -75,6 +75,17 @@
         input[type="number"] {
             width: 100px;
         }
+        <div class="control-group">
+    <label>Scrubbable Timeline & Live Timestamp Picker</label>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <input type="range" id="timelineSlider" min="0" max="100" value="0" step="0.01" style="flex-grow: 1; accent-color: var(--accent-color);">
+        <span id="liveTimestampDisplay" style="font-family: monospace; font-size: 1rem; color: var(--accent-color); min-width: 70px;">0.00s</span>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <button type="button" id="setStartBtn" style="padding: 6px; font-size: 0.85rem; margin-top: 0;">Set Start Here</button>
+        <button type="button" id="setEndBtn" style="padding: 6px; font-size: 0.85rem; margin-top: 0;">Set End Here</button>
+    </div>
+</div>
 
         .inputs-row {
             display: flex;
@@ -178,6 +189,10 @@
 <video id="hiddenVideo" class="hidden" muted playsinline></video>
 
 <script>
+    const timelineSlider = document.getElementById('timelineSlider');
+const liveTimestampDisplay = document.getElementById('liveTimestampDisplay');
+const setStartBtn = document.getElementById('setStartBtn');
+const setEndBtn = document.getElementById('setEndBtn');
     const videoUpload = document.getElementById('videoUpload');
     const startTimeInput = document.getElementById('startTime');
     const endTimeInput = document.getElementById('endTime');
@@ -207,6 +222,9 @@
             processBtn.disabled = false;
             statusLog.textContent = `Video loaded successfully. Duration: ${videoDuration.toFixed(2)}s`;
         };
+        // Set max limit of the timeline slider once metadata is loaded
+timelineSlider.max = videoDuration;
+timelineSlider.value = 0;
     });
 
     processBtn.addEventListener('click', async () => {
@@ -337,7 +355,30 @@
                 resolve();
             };
             videoElem.addEventListener('seeked', handler);
-        });
+        }// When you drag the slider, scrub the visible video element to that exact frame
+timelineSlider.addEventListener('input', (e) => {
+    const targetTime = parseFloat(e.target.value);
+    videoElement.currentTime = targetTime;
+    liveTimestampDisplay.textContent = targetTime.toFixed(2) + 's';
+});
+
+// When the video plays normally, update the slider and timestamp display in real-time
+videoElement.addEventListener('timeupdate', () => {
+    if (!document.activeElement.isSameNode(timelineSlider)) {
+        timelineSlider.value = videoElement.currentTime;
+        liveTimestampDisplay.textContent = videoElement.currentTime.toFixed(2) + 's';
+    }
+});
+
+// Capture current slider timestamp into the Start input
+setStartBtn.addEventListener('click', () => {
+    startTimeInput.value = parseFloat(timelineSlider.value).toFixed(2);
+});
+
+// Capture current slider timestamp into the End input
+setEndBtn.addEventListener('click', () => {
+    endTimeInput.value = parseFloat(timelineSlider.value).toFixed(2);
+}););
     }
 </script>
 
