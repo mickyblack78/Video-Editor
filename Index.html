@@ -405,7 +405,8 @@ timelineSlider.value = 0;
                 resolve();
             };
             videoElem.addEventListener('seeked', handler);
-        }// When you drag the slider, scrub the visible video element to that exact frame
+        });
+        // When you drag the slider, scrub the visible video element to that exact frame
 timelineSlider.addEventListener('input', (e) => {
     const targetTime = parseFloat(e.target.value);
     videoElement.currentTime = targetTime;
