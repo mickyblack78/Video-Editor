@@ -331,7 +331,13 @@ timelineSlider.value = 0;
             // If the frame sits inside our error zone, we store it for time-reversing
             if (f >= startFrame && f <= endFrame) {
                 frameDataStore.push(ctx.getImageData(0, 0, width, height));
-            } else {
+            }
+            if (globalSpeedMode.value === 'global-reverse') {
+    statusLog.textContent = "Executing Full Global Video Reversal...";
+    // Reverse the entire frameDataStore array instead of just a slice
+    const assembledFrames = frameDataStore.reverse();
+    // (Proceed to canvasStream recording with assembledFrames)
+            }else {
                 // For regular parts, we store frame capture to replay sequentially
                 frameDataStore.push(ctx.getImageData(0, 0, width, height));
             }
@@ -422,6 +428,27 @@ videoElement.addEventListener('timeupdate', () => {
 // Capture current slider timestamp into the Start input
 setStartBtn.addEventListener('click', () => {
     startTimeInput.value = parseFloat(timelineSlider.value).toFixed(2);
+});
+        brightnessRange.addEventListener('input', (e) => {
+    brightVal.textContent = e.target.value + '%';
+    updateVideoFilters();
+});
+
+contrastRange.addEventListener('input', (e) => {
+    contrastVal.textContent = e.target.value + '%';
+    updateVideoFilters();
+});
+
+function updateVideoFilters() {
+    videoElement.style.filter = `brightness(${brightnessRange.value}%) contrast(${contrastRange.value}%)`;
+}
+
+globalSpeedMode.addEventListener('change', (e) => {
+    if (e.target.value === 'global-reverse') {
+        videoElement.playbackRate = 1.0; // Handled in processing if exported, but preview plays normal or we can note it
+    } else {
+        videoElement.playbackRate = parseFloat(e.target.value);
+    }
 });
 
 // Capture current slider timestamp into the End input
