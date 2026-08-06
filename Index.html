@@ -113,6 +113,28 @@
             display: flex;
             gap: 20px;
         }
+        <div class="control-group" style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+    <label>Global Video Adjustments & Speed</label>
+    <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+        <div style="flex: 1;">
+            <label style="font-size: 0.75rem;">Brightness: <span id="brightVal">100</span>%</label>
+            <input type="range" id="brightnessRange" min="0" max="200" value="100" style="width:100%;">
+        </div>
+        <div style="flex: 1;">
+            <label style="font-size: 0.75rem;">Contrast: <span id="contrastVal">100</span>%</label>
+            <input type="range" id="contrastRange" min="0" max="200" value="100" style="width:100%;">
+        </div>
+    </div>
+    <div style="margin-top: 5px;">
+        <label style="font-size: 0.75rem;">Global Playback Mode / Speed</label>
+        <select id="globalSpeedMode" style="background: #2d2d2d; color: var(--text-main); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; width: 100%;">
+            <option value="1.0">Normal Speed (1.0x)</option>
+            <option value="0.5">Slow Motion (0.5x)</option>
+            <option value="2.0">Fast Motion (2.0x)</option>
+            <option value="global-reverse">Full Video Global Reverse</option>
+        </select>
+    </div>
+</div>
 
         button {
             background-color: var(--accent-color);
@@ -211,10 +233,15 @@
 <video id="hiddenVideo" class="hidden" muted playsinline></video>
 
 <script>
+    const brightnessRange = document.getElementById('brightnessRange');
+    const contrastRange = document.getElementById('contrastRange');
+    const brightVal = document.getElementById('brightVal');
+    const contrastVal = document.getElementById('contrastVal');
+    const globalSpeedMode = document.getElementById('globalSpeedMode');
     const timelineSlider = document.getElementById('timelineSlider');
-const liveTimestampDisplay = document.getElementById('liveTimestampDisplay');
-const setStartBtn = document.getElementById('setStartBtn');
-const setEndBtn = document.getElementById('setEndBtn');
+    const liveTimestampDisplay = document.getElementById('liveTimestampDisplay');
+    const setStartBtn = document.getElementById('setStartBtn');
+    const setEndBtn = document.getElementById('setEndBtn');
     const videoUpload = document.getElementById('videoUpload');
     const startTimeInput = document.getElementById('startTime');
     const endTimeInput = document.getElementById('endTime');
