@@ -233,6 +233,7 @@
 <video id="hiddenVideo" class="hidden" muted playsinline></video>
 
 <script>
+    const colorSwapFilter = document.getElementById('colorSwapFilter');
     const brightnessRange = document.getElementById('brightnessRange');
     const contrastRange = document.getElementById('contrastRange');
     const brightVal = document.getElementById('brightVal');
@@ -398,6 +399,33 @@ timelineSlider.value = 0;
             }
         }, 1000 / fps);
     }
+    function applyColorSwap(imageData, mode) {
+    if (mode === 'none') return imageData;
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        let r = data[i];
+        let g = data[i + 1];
+        let b = data[i + 2];
+
+        if (mode === 'yellow-to-red') {
+            // Detect prominent yellow (high red + high green, low blue) and shift to red
+            if (r > 150 && g > 150 && b < 100) {
+                data[i] = r;       // Keep red high
+                data[i + 1] = 20;  // Drop green drastically to turn it red
+                data[i + 2] = 20;  // Drop blue
+            }
+        } else if (mode === 'grayscale-except-red') {
+            // Convert to grayscale unless the pixel is predominantly red
+            let avg = (r + g + b) / 3;
+            if (!(r > 100 && r > g + 50 && r > b + 50)) {
+                data[i] = avg;
+                data[i + 1] = avg;
+                data[i + 2] = avg;
+            }
+        }
+    }
+    return imageData;
+        }
 
     function waitForSeek(videoElem) {
         return new Promise((resolve) => {
