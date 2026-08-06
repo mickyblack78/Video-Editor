@@ -254,7 +254,10 @@
     const statusLog = document.getElementById('statusLog');
     const downloadContainer = document.getElementById('downloadContainer');
     const downloadLink = document.getElementById('downloadLink');
-
+    const audioUpload = document.getElementById('audioUpload');
+    const masterAudioVol = document.getElementById('masterAudioVol');
+    const audioVolVal = document.getElementById('audioVolVal');
+    let audioElements = [];
     let videoFileUrl = null;
     let videoDuration = 0;
 
@@ -474,6 +477,47 @@ contrastRange.addEventListener('input', (e) => {
 function updateVideoFilters() {
     videoElement.style.filter = `brightness(${brightnessRange.value}%) contrast(${contrastRange.value}%)`;
 }
+        // Handle external audio / stems upload
+audioUpload.addEventListener('change', (e) => {
+    const files = e.target.files;
+    if (!files.length) return;
+    
+    audioElements = []; // Clear previous tracks
+    for (let file of files) {
+        const audioUrl = URL.createObjectURL(file);
+        const audioElement = new Audio(audioUrl);
+        audioElement.loop = true;
+        audioElements.push(audioElement);
+    }
+    statusLog.textContent = `Loaded ${audioElements.length} custom audio track(s) / stem(s).`;
+});
+
+// Control master volume for loaded audio tracks
+masterAudioVol.addEventListener('input', (e) => {
+    const vol = e.target.value / 100;
+    audioVolVal.textContent = e.target.value + '%';
+    audioElements.forEach(audio => {
+        audio.volume = vol;
+    });
+});
+
+// Sync custom audio playback with video play/pause
+videoElement.addEventListener('play', () => {
+    audioElements.forEach(audio => {
+        audio.currentTime = videoElement.currentTime;
+        audio.play().catch(err => console.log("Audio autoplay restricted:", err));
+    });
+});
+
+videoElement.addEventListener('pause', () => {
+    audioElements.forEach(audio => audio.pause());
+});
+
+videoElement.addEventListener('seeked', () => {
+    audioElements.forEach(audio => {
+        audio.currentTime = videoElement.currentTime;
+    });
+});
 
 globalSpeedMode.addEventListener('change', (e) => {
     if (e.target.value === 'global-reverse') {
