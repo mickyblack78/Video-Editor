@@ -330,18 +330,22 @@ timelineSlider.value = 0;
             ctx.drawImage(hiddenVideo, 0, 0, width, height);
             
             // If the frame sits inside our error zone, we store it for time-reversing
+            let frameData = ctx.getImageData(0, 0, width, height);
+            frameData = applyColorSwap(frameData, colorSwapFilter.value);
+            
             if (f >= startFrame && f <= endFrame) {
-                frameDataStore.push(ctx.getImageData(0, 0, width, height));
-            }
-            if (globalSpeedMode.value === 'global-reverse') {
-    statusLog.textContent = "Executing Full Global Video Reversal...";
-    // Reverse the entire frameDataStore array instead of just a slice
-    const assembledFrames = frameDataStore.reverse();
-    // (Proceed to canvasStream recording with assembledFrames)
-            }else {
+                frameDataStore.push(frameData);
+            } else {
                 // For regular parts, we store frame capture to replay sequentially
-                frameDataStore.push(ctx.getImageData(0, 0, width, height));
+                frameDataStore.push(frameData);
             }
+        }
+
+        if (globalSpeedMode.value === 'global-reverse') {
+            statusLog.textContent = "Executing Full Global Video Reversal...";
+            // Reverse the entire frameDataStore array instead of just a slice
+            const assembledFrames = frameDataStore.reverse();
+            // (Proceed to canvasStream recording with assembledFrames)
         }
 
         statusLog.textContent = "Step 2/3: Reversing target motorcycle movement window...";
